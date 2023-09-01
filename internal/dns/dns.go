@@ -90,8 +90,54 @@ func (h *DnsHeader) Read(buffer *bytepacketbuffer.BytePacketBuffer) error {
 		return err
 	}
 	h.ResourceEntries = resourceEntries
-	
+
 	return nil
 }
+
+// Write writes DNS header data to the buffer.
+func (h *DnsHeader) Write(buffer *bytepacketbuffer.BytePacketBuffer) error {
+	buffer.WriteU16(h.ID)
+
+	flagsA := byte(0)
+	if h.RecursionDesired {
+		flagsA |= 1
+	}
+	if h.TruncatedMessage {
+		flagsA |= 2
+	}
+	if h.AuthoritativeAnswer {
+		flagsA |= 4
+	}
+	flagsA |= (h.Opcode & 0x0F) << 3
+	if h.Response {
+		flagsA |= 0x80
+	}
+
+	flagsB := byte(h.ResultCode)
+	if h.CheckingDisabled {
+		flagsB |= 0x10
+	}
+	if h.AuthedData {
+		flagsB |= 0x20
+	}
+	if h.Z {
+		flagsB |= 0x40
+	}
+	if h.RecursionAvailable {
+		flagsB |= 0x80
+	}
+
+	buffer.WriteU8(flagsA)
+	buffer.WriteU8(flagsB)
+
+	buffer.WriteU16(h.Questions)
+	buffer.WriteU16(h.Answers)
+	buffer.WriteU16(h.AuthoritativeEntries)
+	buffer.WriteU16(h.ResourceEntries)
+
+	return nil
+}
+
+
 
 
