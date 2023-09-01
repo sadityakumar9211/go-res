@@ -1,24 +1,31 @@
 package bytepacketbuffer
 
 import (
-	"encoding/binary"
 	"errors"
-	"fmt"
-	"strings"
 )
-
 
 // BytePacketBuffer is a buffer for working with binary data.
 type BytePacketBuffer struct {
-	Buf []byte
-	Pos uint
+	Buf [512]byte
+	Pos int
 }
 
-func newBytePacketBuffer() *BytePacketBuffer {
-	return &BytePacketBuffer{
-		Buf: make([]byte, 512),
-		Pos: 0,
-	}
+func NewBytePacketBuffer() BytePacketBuffer {
+	return BytePacketBuffer{}
+}
+
+func (b *BytePacketBuffer) GetPos() int {
+	return b.Pos
+}
+
+func (b *BytePacketBuffer) Step(steps int) error {
+	b.Pos += steps
+	return nil
+}
+
+func (b *BytePacketBuffer) Seek(pos int) error {
+	b.Pos = pos
+	return nil
 }
 
 func (b *BytePacketBuffer) Read() (byte, error) {
@@ -30,186 +37,170 @@ func (b *BytePacketBuffer) Read() (byte, error) {
 	return res, nil
 }
 
+func (b *BytePacketBuffer) Get(pos int) (byte, error) {
+	if pos >= 512 {
+		return 0, errors.New("End of buffer")
+	}
+	return b.Buf[pos], nil
+}
+
+func (b *BytePacketBuffer) GetRange(start int, length int) ([]byte, error) {
+	if start+length >= 512 {
+		return nil, errors.New("End of buffer")
+	}
+	return b.Buf[start : start+length], nil
+}
+
 func (b *BytePacketBuffer) ReadU16() (uint16, error) {
-	highByte, err := b.Read()
+	val1, err := b.Read()
 	if err != nil {
 		return 0, err
 	}
-	lowByte, err := b.Read()
+	val2, err := b.Read()
 	if err != nil {
 		return 0, err
 	}
-	return binary.BigEndian.Uint16([]byte{highByte, lowByte}), nil
+	return (uint16(val1) << 8) | uint16(val2), nil
 }
 
 func (b *BytePacketBuffer) ReadU32() (uint32, error) {
-	byte1, err := b.Read()
+	val1, err := b.Read()
 	if err != nil {
 		return 0, err
 	}
-	byte2, err := b.Read()
+	val2, err := b.Read()
 	if err != nil {
 		return 0, err
 	}
-	byte3, err := b.Read()
+	val3, err := b.Read()
 	if err != nil {
 		return 0, err
 	}
-	byte4, err := b.Read()
+	val4, err := b.Read()
 	if err != nil {
 		return 0, err
 	}
-	return binary.BigEndian.Uint32([]byte{byte1, byte2, byte3, byte4}), nil
+	return (uint32(val1) << 24) | (uint32(val2) << 16) | (uint32(val3) << 8) | uint32(val4), nil
 }
 
-func (b *BytePacketBuffer) ReadQName() (string, error) {
-	var parts []string
+func (b *BytePacketBuffer) ReadQName(outstr *string) error {
+	pos := b.GetPos()
 	jumped := false
+	delim := ""
 	maxJumps := 5
 	jumpsPerformed := 0
 
 	for {
 		if jumpsPerformed > maxJumps {
-			return "", fmt.Errorf("Limit of %d jumps exceeded", maxJumps)
+			return errors.New("Limit of 5 jumps exceeded")
 		}
 
-		lenByte, err := b.Read()
+		lenVal, err := b.Get(pos)
 		if err != nil {
-			return "", err
+			return err
 		}
-		if (lenByte & 0xC0) == 0xC0 {
+
+		if (lenVal & 0xC0) == 0xC0 {
 			if !jumped {
-				_, _ = b.Read()
+				b.Seek(pos + 2)
 			}
-			offset, err := b.ReadU16()
+			b2, err := b.Get(pos + 1)
 			if err != nil {
-				return "", err
+				return err
 			}
-			offset &= 0x3FFF
-			b.Pos = uint(offset)
+			offset := ((uint16(lenVal) ^ 0xC0) << 8) | uint16(b2)
+			pos = int(offset)
 			jumped = true
 			jumpsPerformed++
 			continue
 		}
-		if lenByte == 0 {
+
+		pos++
+		if lenVal == 0 {
 			break
 		}
-		partBytes := make([]byte, lenByte)
-		for i := byte(0); i < lenByte; i++ {
-			partBytes[i], err = b.Read()
-			if err != nil {
-				return "", err
-			}
+
+		*outstr += delim
+		strBuffer, err := b.GetRange(pos, int(lenVal))
+		if err != nil {
+			return err
 		}
-		part := string(partBytes)
-		parts = append(parts, part)
+		*outstr += string(strBuffer)
+		delim = "."
+		pos += int(lenVal)
 	}
-	return strings.Join(parts, "."), nil
-}
 
-
-
-
-func (b *BytePacketBuffer) Write(val byte) error {
-    if b.Pos >= 512 {
-        return errors.New("End of buffer")
-    }
-    b.Buf[b.Pos] = val
-    b.Pos++
-    return nil
-}
-
-func (b *BytePacketBuffer) WriteU16(val uint16) error {
-    buf := make([]byte, 2)
-    binary.BigEndian.PutUint16(buf, val)
-    if err := b.Write(buf[0]); err != nil {
-        return err
-    }
-    if err := b.Write(buf[1]); err != nil {
-        return err
-    }
-    return nil
-}
-
-func (b *BytePacketBuffer) WriteU32(val uint32) error {
-    buf := make([]byte, 4)
-    binary.BigEndian.PutUint32(buf, val)
-    for _, byteVal := range buf {
-        if err := b.Write(byteVal); err != nil {
-            return err
-        }
-    }
-    return nil
-}
-
-func (b *BytePacketBuffer) WriteQName(qname string) error {
-    labels := strings.Split(qname, ".")
-    for _, label := range labels {
-        lenByte := byte(len(label))
-        if err := b.Write(lenByte); err != nil {
-            return err
-        }
-        for _, char := range label {
-            if err := b.Write(byte(char)); err != nil {
-                return err
-            }
-        }
-    }
-    if err := b.Write(0); err != nil {
-        return err
-    }
-    return nil
-}
-
-
-func (buf *BytePacketBuffer) GetPos() uint {
-	return uint(buf.Pos)
-}
-
-func (buf *BytePacketBuffer) Step(steps uint) {
-	buf.Pos += steps
-}
-
-func (buf *BytePacketBuffer) Seek(pos uint) {
-	buf.Pos = pos
-}
-
-func (b *BytePacketBuffer) Get(pos int) (byte, error) {
-    if pos >= 512 {
-        return 0, errors.New("End of buffer")
-    }
-    return b.Buf[pos], nil
-}
-
-func (b *BytePacketBuffer) GetRange(start, length int) ([]byte, error) {
-    if start+length >= 512 {
-        return nil, errors.New("End of buffer")
-    }
-    return b.Buf[start : start+length], nil
-}
-
-func (buf *BytePacketBuffer) WriteU8(val uint8) error {
-	if err := buf.Write(val); err != nil {
-		return err
+	if !jumped {
+		b.Seek(pos)
 	}
+
 	return nil
 }
 
-func (buf *BytePacketBuffer) Set(pos int, val uint8) error {
-	if pos < 0 || pos >= len(buf.Buf) {
-		return errors.New("position out of bounds")
+func (b *BytePacketBuffer) Write(val byte) error {
+	if b.Pos >= 512 {
+		return errors.New("End of buffer")
 	}
-	buf.Buf[pos] = val
-	return nil // Return nil to indicate success
+	b.Buf[b.Pos] = val
+	b.Pos++
+	return nil
 }
 
-func (buf *BytePacketBuffer) SetU16(pos int, val uint16) error {
-	if pos < 0 || pos+1 >= len(buf.Buf) {
-		return errors.New("position out of bounds")
+func (b *BytePacketBuffer) WriteU8(val byte) error {
+	return b.Write(val)
+}
+
+func (b *BytePacketBuffer) WriteU16(val uint16) error {
+	b.Write(byte(val >> 8))
+	b.Write(byte(val & 0xFF))
+	return nil
+}
+
+func (b *BytePacketBuffer) WriteU32(val uint32) error {
+	b.Write(byte((val >> 24) & 0xFF))
+	b.Write(byte((val >> 16) & 0xFF))
+	b.Write(byte((val >> 8) & 0xFF))
+	b.Write(byte(val & 0xFF))
+	return nil
+}
+
+func (b *BytePacketBuffer) WriteQName(qname string) error {
+	for _, label := range SplitDNSName(qname) {
+		lenVal := byte(len(label))
+		if lenVal > 0x34 {
+			return errors.New("Single label exceeds 63 characters of length")
+		}
+		b.WriteU8(lenVal)
+		for _, ch := range label {
+			b.Write(byte(ch))
+		}
+	}
+	b.WriteU8(0)
+	return nil
+}
+
+func (b *BytePacketBuffer) Set(pos int, val byte) error {
+	b.Buf[pos] = val
+	return nil
+}
+
+func (b *BytePacketBuffer) SetU16(pos int, val uint16) error {
+	b.Set(pos, byte(val>>8))
+	b.Set(pos+1, byte(val&0xFF))
+	return nil
+}
+
+func SplitDNSName(qname string) []string {
+	labels := make([]string, 0)
+	labelStart := 0
+
+	for i, ch := range qname {
+		if ch == '.' {
+			labels = append(labels, qname[labelStart:i])
+			labelStart = i + 1
+		}
 	}
 
-	buf.Buf[pos] = uint8(val >> 8)
-	buf.Buf[pos+1] = uint8(val)
-
-	return nil // Return nil to indicate success
+	labels = append(labels, qname[labelStart:])
+	return labels
 }
