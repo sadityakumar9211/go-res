@@ -5,10 +5,6 @@ import (
 	"strings"
 )
 
-// pub struct BytePacketBuffer {
-//     pub buf: [u8; 512],
-//     pub pos: usize,
-// }
 
 type BytePacketBuffer struct {
 	Buf []uint8
