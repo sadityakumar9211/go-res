@@ -263,8 +263,8 @@ func (a *ARecord) Read(buffer *bytepacketbuffer.BytePacketBuffer) error {
 // Write writes ARecord data to the buffer.
 func (a *ARecord) Write(buffer *bytepacketbuffer.BytePacketBuffer) error {
 	buffer.WriteQName(a.Domain)
-	buffer.WriteU16(1)  // for A record the num equivalent is 1
-	buffer.WriteU16(1) // class
+	buffer.WriteU16(A.QueryTypeToNum()) // for A record the num equivalent is 1
+	buffer.WriteU16(1)                  // class
 	buffer.WriteU32(a.TTL)
 	buffer.WriteU16(4) // data length
 	octets := a.Addr.To4()
@@ -274,5 +274,92 @@ func (a *ARecord) Write(buffer *bytepacketbuffer.BytePacketBuffer) error {
 	buffer.WriteU8(octets[3])
 
 	return nil
+}
+
+// NSRecord represents an NS DNS record.
+type NSRecord struct {
+	Domain string
+	Host   string
+	TTL    uint32
+}
+
+// Read reads NSRecord data from the buffer.
+func (n *NSRecord) Read(buffer *bytepacketbuffer.BytePacketBuffer) error {
+	err := buffer.ReadQName(&n.Domain)
+	if err != nil {
+		return err
+	}
+	n.TTL, err = buffer.ReadU32()
+	if err != nil {
+		return err
+	}
+	buffer.ReadU16() // data length, ignored
+	err = buffer.ReadQName(&n.Host)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// Write writes NSRecord data to the buffer.
+func (n *NSRecord) Write(buffer *bytepacketbuffer.BytePacketBuffer) error {
+	buffer.WriteQName(n.Domain)
+	buffer.WriteU16(NS.QueryTypeToNum())
+	buffer.WriteU16(1) // class
+	buffer.WriteU32(n.TTL)
+	buffer.WriteU16(0) // data length
+	buffer.WriteQName(n.Host)
+	return nil
+}
+
+// AAAARecord represents an AAAA DNS record.
+type AAAARecord struct {
+	Domain string
+	Addr   net.IP
+	TTL    uint32
+}
+
+// Read reads AAAARecord data from the buffer.
+func (a *AAAARecord) Read(buffer *bytepacketbuffer.BytePacketBuffer) error {
+    if err := buffer.ReadQName(&a.Domain); err != nil {
+		return err
+	}
+    ttl, err := buffer.ReadU32()
+	if err != nil {
+		return err
+	}
+	a.TTL = ttl
+
+    buffer.ReadU16() // data length, ignored
+
+    // Read the 16 bytes for the IPv6 address
+    ipBytes := make([]byte, 16)
+    for i := 0; i < 16; i++ {
+        val, err := buffer.Read()
+        if err != nil {
+            return err
+        }
+        ipBytes[i] = val
+    }
+    a.Addr = net.IP(ipBytes)
+
+    return nil
+}
+
+
+// Write writes AAAARecord data to the buffer.
+func (a *AAAARecord) Write(buffer *bytepacketbuffer.BytePacketBuffer) error {
+    buffer.WriteQName(a.Domain)
+    buffer.WriteU16(AAAA.QueryTypeToNum())
+    buffer.WriteU16(1) // class
+    buffer.WriteU32(a.TTL)
+    buffer.WriteU16(16) // data length
+
+    // Write the 16 bytes for the IPv6 address
+    for _, octet := range a.Addr.To16() {
+        buffer.WriteU8(octet)
+    }
+
+    return nil
 }
 
