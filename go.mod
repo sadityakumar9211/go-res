@@ -1,3 +1,3 @@
-module github.com/sadityakumar9211/go-dns
+module github.com/sadityakumar9211/go-res
 
 go 1.20

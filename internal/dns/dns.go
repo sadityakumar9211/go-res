@@ -211,6 +211,16 @@ func (q *DnsQuestion) Read(buffer *bytepacketbuffer.BytePacketBuffer) error {
 	return nil
 }
 
+// Write writes DNS question data to the buffer.
+func (q *DnsQuestion) Write(buffer *bytepacketbuffer.BytePacketBuffer) error {
+	buffer.WriteQName(q.Name)
+	buffer.WriteU16(q.QType.QueryTypeToNum())
+	buffer.WriteU16(1) // class
+	return nil
+}
+
+
+
 
 
 
