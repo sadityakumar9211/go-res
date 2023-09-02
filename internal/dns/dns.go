@@ -1,7 +1,6 @@
 package dns
 
 import (
-	"errors"
 	"fmt"
 	"net"
 	"strings"
@@ -312,14 +311,19 @@ func (a *ARecord) Write(buffer *bytepacketbuffer.BytePacketBuffer) (uint, error)
 
 	octets := a.Addr.To4()
 	var err error
-	err = buffer.WriteU8(octets[0])
-	err = buffer.WriteU8(octets[1])
-	err = buffer.WriteU8(octets[2])
-	err = buffer.WriteU8(octets[3])
-
-	if err != nil {
+	if err = buffer.WriteU8(octets[0]); err != nil {
 		return 0, err
 	}
+	if err = buffer.WriteU8(octets[1]); err != nil {
+		return 0, err
+	}
+	if err = buffer.WriteU8(octets[2]); err != nil {
+		return 0, err
+	}
+	if err = buffer.WriteU8(octets[3]); err != nil {
+		return 0, err
+	}
+	
 	return uint(buffer.GetPos() - start_pos), nil
 }
 
@@ -856,9 +860,9 @@ func (p *DnsPacket) GetNS(qname string) <-chan struct {
 }
 
 // GetResolvedNS returns the resolved IP for an NS record if possible.
-/// We'll use the fact that name servers often bundle the corresponding
-/// A records when replying to an NS query to implement a function that
-/// returns the actual IP for an NS record if possible.
+// / We'll use the fact that name servers often bundle the corresponding
+// / A records when replying to an NS query to implement a function that
+// / returns the actual IP for an NS record if possible.
 func (p *DnsPacket) GetResolvedNS(qname string) net.IP {
 	for ns := range p.GetNS(qname) {
 		for _, record := range p.Resources {
@@ -871,12 +875,10 @@ func (p *DnsPacket) GetResolvedNS(qname string) net.IP {
 	return nil // Return nil for no match
 }
 
-
-
-/// However, not all name servers are as that nice. In certain cases there won't
-/// be any A records in the additional section, and we'll have to perform *another*
-/// lookup in the midst. For this, we introduce a method for returning the host
-/// name of an appropriate name server.
+// / However, not all name servers are as that nice. In certain cases there won't
+// / be any A records in the additional section, and we'll have to perform *another*
+// / lookup in the midst. For this, we introduce a method for returning the host
+// / name of an appropriate name server.
 // GetUnresolvedNS returns the host name of an appropriate name server.
 func (p *DnsPacket) GetUnresolvedNS(qname string) string {
 	for ns := range p.GetNS(qname) {
@@ -885,4 +887,3 @@ func (p *DnsPacket) GetUnresolvedNS(qname string) string {
 
 	return "" // Return an empty string for no match
 }
-
