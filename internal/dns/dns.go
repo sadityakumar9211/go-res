@@ -323,7 +323,7 @@ func (a *ARecord) Write(buffer *bytepacketbuffer.BytePacketBuffer) (uint, error)
 	if err = buffer.WriteU8(octets[3]); err != nil {
 		return 0, err
 	}
-	
+
 	return uint(buffer.GetPos() - start_pos), nil
 }
 
