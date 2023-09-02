@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"strings"
 
 	"github.com/sadityakumar9211/go-res/pkg/bytepacketbuffer"
 )
@@ -226,7 +227,9 @@ func (q *DnsQuestion) Write(buffer *bytepacketbuffer.BytePacketBuffer) error {
 // DnsRecord represents a DNS resource record.
 type DnsRecord interface {
 	Read(buffer *bytepacketbuffer.BytePacketBuffer) error
-	Write(buffer *bytepacketbuffer.BytePacketBuffer) error
+	Write(buffer *bytepacketbuffer.BytePacketBuffer) (uint, error)
+	ExtractIPv4() net.IP
+	GetDomain() string
 }
 
 // ARecord represents an A DNS record.
@@ -293,11 +296,11 @@ func (a *ARecord) Write(buffer *bytepacketbuffer.BytePacketBuffer) (uint, error)
 	// for A record the num equivalent is 1
 	if err := buffer.WriteU16(A.QueryTypeToNum()); err != nil {
 		return 0, err
-	} 
+	}
 	// class
 	if err := buffer.WriteU16(1); err != nil {
 		return 0, err
-	}       
+	}
 
 	if err := buffer.WriteU32(a.TTL); err != nil {
 		return 0, err
@@ -318,6 +321,14 @@ func (a *ARecord) Write(buffer *bytepacketbuffer.BytePacketBuffer) (uint, error)
 		return 0, err
 	}
 	return uint(buffer.GetPos() - start_pos), nil
+}
+
+func (a *ARecord) ExtractIPv4() net.IP {
+	return a.Addr
+}
+
+func (a *ARecord) GetDomain() string {
+	return a.Domain
 }
 
 // NSRecord represents an NS DNS record.
@@ -385,10 +396,17 @@ func (n *NSRecord) Write(buffer *bytepacketbuffer.BytePacketBuffer) (uint, error
 		return 0, err
 	}
 
-	size := buffer.GetPos() - (pos+ 2)
+	size := buffer.GetPos() - (pos + 2)
 	buffer.SetU16(pos, uint16(size))
 
 	return uint(buffer.GetPos() - start_pos), nil
+}
+
+func (a *NSRecord) ExtractIPv4() net.IP {
+	return nil
+}
+func (a *NSRecord) GetDomain() string {
+	return a.Domain
 }
 
 // AAAARecord represents an AAAA DNS record.
@@ -460,7 +478,14 @@ func (a *AAAARecord) Write(buffer *bytepacketbuffer.BytePacketBuffer) (uint, err
 		buffer.WriteU8(octet)
 	}
 
-	return uint(buffer.GetPos() - start_pos), nil 
+	return uint(buffer.GetPos() - start_pos), nil
+}
+
+func (a *AAAARecord) ExtractIPv4() net.IP {
+	return nil
+}
+func (a *AAAARecord) GetDomain() string {
+	return a.Domain
 }
 
 // AAAARecord represents an AAAA DNS record.
@@ -530,7 +555,7 @@ func (r *MXRecord) Write(buffer *bytepacketbuffer.BytePacketBuffer) (uint, error
 
 	if err := buffer.WriteU16(0); err != nil {
 		return 0, err
-	} 
+	}
 
 	// Write the MX priority and host
 	if err := buffer.WriteU16(r.Priority); err != nil {
@@ -546,6 +571,14 @@ func (r *MXRecord) Write(buffer *bytepacketbuffer.BytePacketBuffer) (uint, error
 	}
 
 	return uint(buffer.GetPos()) - uint(start_pos), nil
+}
+
+func (a *MXRecord) ExtractIPv4() net.IP {
+	return nil
+}
+
+func (a *MXRecord) GetDomain() string {
+	return a.Domain
 }
 
 type CNAMERecord struct {
@@ -577,7 +610,7 @@ func (c *CNAMERecord) Read(buffer *bytepacketbuffer.BytePacketBuffer) error {
 	// data length, ignored
 	if _, err := buffer.ReadU16(); err != nil {
 		return err
-	} 
+	}
 
 	if err := buffer.ReadQName(&c.Host); err != nil {
 		return err
@@ -602,12 +635,11 @@ func (c *CNAMERecord) Write(buffer *bytepacketbuffer.BytePacketBuffer) (uint, er
 		return 0, err
 	}
 
-	
 	pos := buffer.GetPos()
 
 	if err := buffer.WriteU16(0); err != nil {
 		return 0, err
-	} 
+	}
 
 	if err := buffer.WriteQName(c.Host); err != nil {
 		return 0, err
@@ -619,6 +651,14 @@ func (c *CNAMERecord) Write(buffer *bytepacketbuffer.BytePacketBuffer) (uint, er
 	}
 
 	return uint(buffer.GetPos()) - uint(start_pos), nil
+}
+
+func (a *CNAMERecord) ExtractIPv4() net.IP {
+	return nil
+}
+
+func (a *CNAMERecord) GetDomain() string {
+	return a.Domain
 }
 
 type UNKNOWNRecord struct {
@@ -652,7 +692,7 @@ func (u *UNKNOWNRecord) Read(buffer *bytepacketbuffer.BytePacketBuffer) error {
 	dataLength, err := buffer.ReadU16()
 	if err != nil {
 		return err
-	} 
+	}
 
 	buffer.Step(int(dataLength))
 
@@ -664,6 +704,10 @@ func (u *UNKNOWNRecord) Write(buffer *bytepacketbuffer.BytePacketBuffer) (uint, 
 	st := fmt.Sprintf("Skipping record %v", u)
 	fmt.Println(st)
 	return 0, nil
+}
+
+func (a *UNKNOWNRecord) ExtractIPv4() net.IP {
+	return nil
 }
 
 // DnsPacket represents a DNS packet.
@@ -678,11 +722,11 @@ type DnsPacket struct {
 // NewDnsPacket creates a new DNS packet with default values.
 func NewDnsPacket() *DnsPacket {
 	return &DnsPacket{
-		Header:    NewDnsHeader(),
-		Questions: make([]*DnsQuestion, 0),
-		Answers:   make([]DnsRecord, 0),
+		Header:      NewDnsHeader(),
+		Questions:   make([]*DnsQuestion, 0),
+		Answers:     make([]DnsRecord, 0),
 		Authorities: make([]DnsRecord, 0),
-		Resources: make([]DnsRecord, 0),
+		Resources:   make([]DnsRecord, 0),
 	}
 }
 
@@ -699,7 +743,7 @@ func FromBuffer(buffer *bytepacketbuffer.BytePacketBuffer) (*DnsPacket, error) {
 	}
 
 	// Reading answers from the buffer
-	for i := uint16(0); i < packet.Header.Answers; i ++ {
+	for i := uint16(0); i < packet.Header.Answers; i++ {
 		var rec DnsRecord
 		if err := rec.Read(buffer); err != nil {
 			return nil, err
@@ -707,7 +751,7 @@ func FromBuffer(buffer *bytepacketbuffer.BytePacketBuffer) (*DnsPacket, error) {
 		packet.Answers = append(packet.Answers, rec)
 	}
 	// Reading authoritative entries from the buffer
-	for i := uint16(0); i < packet.Header.AuthoritativeEntries; i ++ {
+	for i := uint16(0); i < packet.Header.AuthoritativeEntries; i++ {
 		var rec DnsRecord
 		if err := rec.Read(buffer); err != nil {
 			return nil, err
@@ -715,7 +759,7 @@ func FromBuffer(buffer *bytepacketbuffer.BytePacketBuffer) (*DnsPacket, error) {
 		packet.Authorities = append(packet.Authorities, rec)
 	}
 	// Reading answers from the buffer
-	for i := uint16(0); i < packet.Header.ResourceEntries; i ++ {
+	for i := uint16(0); i < packet.Header.ResourceEntries; i++ {
 		var rec DnsRecord
 		if err := rec.Read(buffer); err != nil {
 			return nil, err
@@ -726,7 +770,6 @@ func FromBuffer(buffer *bytepacketbuffer.BytePacketBuffer) (*DnsPacket, error) {
 	return packet, nil
 }
 
-
 // Write writes the DNS packet to the buffer.
 func (p *DnsPacket) Write(buffer *bytepacketbuffer.BytePacketBuffer) error {
 	p.Header.Questions = uint16(len(p.Questions))
@@ -734,39 +777,112 @@ func (p *DnsPacket) Write(buffer *bytepacketbuffer.BytePacketBuffer) error {
 	p.Header.AuthoritativeEntries = uint16(len(p.Authorities))
 	p.Header.ResourceEntries = uint16(len(p.Resources))
 
-	p.Header.Write(buffer)
+	if err := p.Header.Write(buffer); err != nil {
+		return err
+	}
 
 	for _, question := range p.Questions {
-		question.Write(buffer)
+		if err := question.Write(buffer); err != nil {
+			return err
+		}
+	}
+
+	for _, record := range p.Answers {
+		if _, err := record.Write(buffer); err != nil {
+			return err
+		}
+	}
+	for _, record := range p.Authorities {
+		if _, err := record.Write(buffer); err != nil {
+			return err
+		}
+	}
+	for _, record := range p.Resources {
+		if _, err := record.Write(buffer); err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
-// GetRandomA returns a random A record from the packet.
-func (p *DnsPacket) GetRandomA() (net.IP, error) {
-	for _, answer := range p.Answers {
-		if aRecord, ok := answer.(*ARecord); ok {
-			return aRecord.Addr, nil
+// / It's useful to be able to pick a random A record from a packet. When we
+// / get multiple IP's for a single name, it doesn't matter which one we
+// / choose, so in those cases we can now pick one at random.
+// GetRandomA returns a random IPv4 address (A record) from the DNS packet's list of answers.
+func (p *DnsPacket) GetRandomA() net.IP {
+	for _, record := range p.Answers {
+		// if a, ok := record.(DnsRecord); ok {
+		// Only A records return the address and others return nil
+		if addr := record.ExtractIPv4(); addr != nil {
+			return addr
 		}
+		// }
 	}
-
-	return nil, errors.New("No A record found in answers")
+	return nil // Return nil if no IPv4 address is found
 }
 
-// GetResolvedNS returns the resolved IP address for an NS record if possible.
-func (p *DnsPacket) GetResolvedNS(qname string) (net.IP, error) {
-	for _, authority := range p.Authorities {
-		if nsRecord, ok := authority.(*NSRecord); ok && nsRecord.Domain == qname {
-			ns := nsRecord.Host
-			for _, resource := range p.Resources {
-				if aRecord, ok := resource.(*ARecord); ok && aRecord.Domain == ns {
-					return aRecord.Addr, nil
+// GetNS returns an iterator over all name servers in the authorities section,
+// represented as (domain, host) tuples.
+func (p *DnsPacket) GetNS(qname string) <-chan struct {
+	Domain string
+	Host   string
+} {
+	resultChan := make(chan struct {
+		Domain string
+		Host   string
+	})
+
+	go func() {
+		defer close(resultChan)
+
+		for _, record := range p.Authorities {
+			if strings.HasSuffix(qname, record.GetDomain()) {
+				switch nsRecord := record.(type) {
+				case *NSRecord:
+					resultChan <- struct {
+						Domain string
+						Host   string
+					}{
+						Domain: nsRecord.Domain,
+						Host:   nsRecord.Host,
+					}
 				}
 			}
-			return nil, errors.New("No matching A record found for the NS record")
+		}
+	}()
+
+	return resultChan
+}
+
+// GetResolvedNS returns the resolved IP for an NS record if possible.
+/// We'll use the fact that name servers often bundle the corresponding
+/// A records when replying to an NS query to implement a function that
+/// returns the actual IP for an NS record if possible.
+func (p *DnsPacket) GetResolvedNS(qname string) net.IP {
+	for ns := range p.GetNS(qname) {
+		for _, record := range p.Resources {
+			if aRecord, ok := record.(*ARecord); ok && aRecord.Domain == ns.Host {
+				return aRecord.Addr
+			}
 		}
 	}
 
-	return nil, errors.New("No NS record found in authorities")
+	return nil // Return nil for no match
 }
+
+
+
+/// However, not all name servers are as that nice. In certain cases there won't
+/// be any A records in the additional section, and we'll have to perform *another*
+/// lookup in the midst. For this, we introduce a method for returning the host
+/// name of an appropriate name server.
+// GetUnresolvedNS returns the host name of an appropriate name server.
+func (p *DnsPacket) GetUnresolvedNS(qname string) string {
+	for ns := range p.GetNS(qname) {
+		return ns.Host
+	}
+
+	return "" // Return an empty string for no match
+}
+
