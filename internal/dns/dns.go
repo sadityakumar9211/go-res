@@ -138,6 +138,79 @@ func (h *DnsHeader) Write(buffer *bytepacketbuffer.BytePacketBuffer) error {
 	return nil
 }
 
+// QueryType represents DNS query types.
+type QueryType int
+
+const (
+	UNKNOWN QueryType = iota
+	A
+	NS
+	CNAME
+	MX
+	AAAA
+)
+
+// QueryTypeFromNum converts a numerical query type to QueryType.
+func QueryTypeFromNum(num uint16) QueryType {
+	switch num {
+	case 1:
+		return A
+	case 2:
+		return NS
+	case 5:
+		return CNAME
+	case 15:
+		return MX
+	case 28:
+		return AAAA
+	default:
+		return UNKNOWN
+	}
+}
+
+// QueryTypeToNum converts QueryType to a numerical query type.
+func (q QueryType) QueryTypeToNum() uint16 {
+	switch q {
+	case A:
+		return 1
+	case NS:
+		return 2
+	case CNAME:
+		return 5
+	case MX:
+		return 15
+	case AAAA:
+		return 28
+	default:
+		return 0
+	}
+}
+
+// DnsQuestion represents a DNS question.
+type DnsQuestion struct {
+	Name  string
+	QType QueryType
+}
+
+// Read reads DNS question data from the buffer.
+func (q *DnsQuestion) Read(buffer *bytepacketbuffer.BytePacketBuffer) error {
+	err := buffer.ReadQName(&q.Name)
+	if err != nil {
+		return err
+	}
+
+	queryTypeFromNum, err := buffer.ReadU16()
+	if err != nil {
+		return err
+	}
+	q.QType = QueryTypeFromNum(queryTypeFromNum)
+	if _, err = buffer.ReadU16(); err != nil {
+		return err
+	} // class
+
+	return nil
+}
+
 
 
 
