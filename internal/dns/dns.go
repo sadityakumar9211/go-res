@@ -1,6 +1,8 @@
 package dns
 
 import (
+	"net"
+
 	"github.com/sadityakumar9211/go-res/pkg/bytepacketbuffer"
 )
 
@@ -219,8 +221,58 @@ func (q *DnsQuestion) Write(buffer *bytepacketbuffer.BytePacketBuffer) error {
 	return nil
 }
 
+// ARecord represents an A DNS record.
+type ARecord struct {
+	Domain string
+	Addr   net.IP
+	TTL    uint32
+}
 
+// Read reads ARecord data from the buffer.
+func (a *ARecord) Read(buffer *bytepacketbuffer.BytePacketBuffer) error {
+	if err := buffer.ReadQName(&a.Domain); err != nil {
+		return err
+	}
+	ttl, err := buffer.ReadU32()
+	if err != nil {
+		return err
+	}
+	a.TTL = ttl
+	buffer.ReadU16() // data length, ignored
+	byte1, err := buffer.Read()
+	if err != nil {
+		return err
+	}
+	byte2, err := buffer.Read()
+	if err != nil {
+		return err
+	}
+	byte3, err := buffer.Read()
+	if err != nil {
+		return err
+	}
+	byte4, err := buffer.Read()
+	if err != nil {
+		return err
+	}
 
+	a.Addr = net.IPv4(byte1, byte2, byte3, byte4)
+	return nil
+}
 
+// Write writes ARecord data to the buffer.
+func (a *ARecord) Write(buffer *bytepacketbuffer.BytePacketBuffer) error {
+	buffer.WriteQName(a.Domain)
+	buffer.WriteU16(1)  // for A record the num equivalent is 1
+	buffer.WriteU16(1) // class
+	buffer.WriteU32(a.TTL)
+	buffer.WriteU16(4) // data length
+	octets := a.Addr.To4()
+	buffer.WriteU8(octets[0])
+	buffer.WriteU8(octets[1])
+	buffer.WriteU8(octets[2])
+	buffer.WriteU8(octets[3])
 
+	return nil
+}
 
