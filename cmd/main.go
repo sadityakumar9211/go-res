@@ -9,7 +9,7 @@ import (
 	buf "github.com/sadityakumar9211/go-res/pkg/bytepacketbuffer"
 )
 
-func lookup(qname string, qtype dns.QueryType, server string) (*DnsPacket, error) {
+func lookup(qname string, qtype dns.QueryType, server string) (*dns.DnsPacket, error) {
 	// Forward queries to the specified DNS server
 
 	socket, err := net.Dial("udp", server)
@@ -25,22 +25,24 @@ func lookup(qname string, qtype dns.QueryType, server string) (*DnsPacket, error
 	packet.Questions = append(packet.Questions, &dns.DnsQuestion{Name: qname, QType: qtype})
 
 	reqBuffer := buf.BytePacketBuffer{}
-	if err := packet.Write(reqBuffer); err != nil {
+	if err := packet.Write(&reqBuffer); err != nil {
 		return nil, err
 	}
 
-	_, err = socket.Write(reqBuffer.Bytes()[:reqBuffer.Pos()])
+	_, err = socket.Write(reqBuffer.Buf[:reqBuffer.GetPos()])
 	if err != nil {
 		return nil, err
 	}
 
-	resBuffer := NewBytePacketBuffer()
-	_, err = socket.Read(resBuffer.Bytes())
+	resBuffer := buf.NewBytePacketBuffer()
+	buffer := make([]byte, 512)
+	_, err = socket.Read(buffer)
 	if err != nil {
 		return nil, err
 	}
+	copy(resBuffer.Buf[:], buffer)
 
-	resPacket, err := DnsPacketFromBuffer(resBuffer)
+	resPacket, err := dns.FromBuffer(&resBuffer)
 	if err != nil {
 		return nil, err
 	}
@@ -63,11 +65,11 @@ func recursiveLookup(qname string, qtype dns.QueryType) (*dns.DnsPacket, error) 
 			return nil, err
 		}
 
-		if len(response.Answers) > 0 && response.Header.Rescode == ResultCodeNOERROR {
+		if len(response.Answers) > 0 && response.Header.ResultCode == dns.NOERROR {
 			return response, nil
 		}
 
-		if response.Header.Rescode == ResultCodeNXDOMAIN {
+		if response.Header.ResultCode == dns.NXDOMAIN {
 			return response, nil
 		}
 
@@ -79,7 +81,7 @@ func recursiveLookup(qname string, qtype dns.QueryType) (*dns.DnsPacket, error) 
 
 		newNSName := response.GetUnresolvedNS(qname)
 		if newNSName != "" {
-			recursiveResponse, err := recursiveLookup(newNSName, QueryTypeA)
+			recursiveResponse, err := recursiveLookup(newNSName, dns.A)
 			if err != nil {
 				return nil, err
 			}
@@ -136,7 +138,7 @@ func handleQuery(socket *net.UDPConn) error {
 		} else {
 
 			response.Questions = append(response.Questions, question)
-			response.Header.ResultCode = result.Header.Rescode
+			response.Header.ResultCode = result.Header.ResultCode
 
 			for _, rec := range result.Answers {
 				fmt.Printf("Answer: %#v\n", rec)
