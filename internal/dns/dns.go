@@ -756,6 +756,7 @@ func FromBuffer(buffer *bytepacketbuffer.BytePacketBuffer) (*DnsPacket, error) {
 	}
 	// Reading authoritative entries from the buffer
 	for i := uint16(0); i < packet.Header.AuthoritativeEntries; i++ {
+		fmt.Println("authoritative enteries", len(packet.Authorities), "len in header: ", packet.Header.AuthoritativeEntries)
 		var rec DnsRecord
 		if err := rec.Read(buffer); err != nil {
 			return nil, err
@@ -763,7 +764,7 @@ func FromBuffer(buffer *bytepacketbuffer.BytePacketBuffer) (*DnsPacket, error) {
 		packet.Authorities = append(packet.Authorities, rec)
 	}
 	// Reading answers from the buffer
-	for i := uint16(0); i < packet.Header.ResourceEntries; i++ {
+	for i := uint16(0); i < uint16(len(packet.Resources)); i++ {
 		var rec DnsRecord
 		if err := rec.Read(buffer); err != nil {
 			return nil, err

@@ -57,7 +57,7 @@ func recursiveLookup(qname string, qtype dns.QueryType) (*dns.DnsPacket, error) 
 
 	// Since it might take an arbitrary number of steps, we enter an unbounded loop.
 	for {
-		fmt.Printf("Attempting lookup of %s %s with NS %s\n", qtype, qname, ns)
+		fmt.Printf("Attempting lookup of %v %v with NS %v\n", qtype, qname, ns)
 
 		server := fmt.Sprintf("%s:53", ns.String())
 		response, err := lookup(qname, qtype, server)
