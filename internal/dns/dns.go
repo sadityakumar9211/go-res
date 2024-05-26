@@ -8,9 +8,11 @@ import (
 	"github.com/sadityakumar9211/go-res/pkg/bytepacketbuffer"
 )
 
-// ResultCode represents DNS result codes.
-type ResultCode uint8
 
+type ResultCode uint8 
+type QueryType int 
+
+// ResultCode represents DNS result codes.
 const (
 	NOERROR  ResultCode = 0
 	FORMERR  ResultCode = 1
@@ -20,7 +22,17 @@ const (
 	REFUSED  ResultCode = 5
 )
 
-// DnsHeader represents DNS packet header.
+// QueryType represents DNS query types.
+const (
+	UNKNOWN QueryType = iota
+	A
+	NS
+	CNAME
+	MX
+	AAAA
+)
+
+// DnsHeader represents header of DNS packet.
 type DnsHeader struct {
 	ID                   uint16
 	RecursionDesired     bool
@@ -142,18 +154,6 @@ func (h *DnsHeader) Write(buffer *bytepacketbuffer.BytePacketBuffer) error {
 	return nil
 }
 
-// QueryType represents DNS query types.
-type QueryType int
-
-const (
-	UNKNOWN QueryType = iota
-	A
-	NS
-	CNAME
-	MX
-	AAAA
-)
-
 // QueryTypeFromNum converts a numerical query type to QueryType.
 func QueryTypeFromNum(num uint16) QueryType {
 	switch num {
@@ -186,7 +186,7 @@ func (q QueryType) QueryTypeToNum() uint16 {
 	case AAAA:
 		return 28
 	default:
-		return 0
+		return 0 // UNKNOWN
 	}
 }
 
@@ -545,12 +545,14 @@ func (r *MXRecord) Write(buffer *bytepacketbuffer.BytePacketBuffer) (uint, error
 	if err := buffer.WriteQName(r.Domain); err != nil {
 		return 0, err
 	}
+	// Query Type
 	if err := buffer.WriteU16(MX.QueryTypeToNum()); err != nil {
 		return 0, err
 	}
 	if err := buffer.WriteU16(1); err != nil {
 		return 0, err
-	} // class
+	} 
+	// class
 	if err := buffer.WriteU32(r.TTL); err != nil {
 		return 0, err
 	}
@@ -673,26 +675,29 @@ type UNKNOWNRecord struct {
 }
 
 func (u *UNKNOWNRecord) Read(buffer *bytepacketbuffer.BytePacketBuffer) error {
-	// Domain Name
+	// Domain Name 
 	if err := buffer.ReadQName(&u.Domain); err != nil {
 		return err
 	}
-	// QueryType
+	
+	// QueryType - 2 byte
 	if _, err := buffer.ReadU16(); err != nil {
 		return err
 	}
 
+	// Ignoring the class type - 2 byte 
 	if _, err := buffer.ReadU16(); err != nil {
 		return err
 	}
 
+	// TTL - 2 byte
 	if ttl, err := buffer.ReadU32(); err != nil {
 		return err
 	} else {
 		u.TTL = ttl
 	}
 
-	// data length, ignored
+	// data length, ignored - 2 byte
 	dataLength, err := buffer.ReadU16()
 	if err != nil {
 		return err
@@ -712,6 +717,10 @@ func (u *UNKNOWNRecord) Write(buffer *bytepacketbuffer.BytePacketBuffer) (uint, 
 
 func (a *UNKNOWNRecord) ExtractIPv4() net.IP {
 	return nil
+}
+
+func (a *UNKNOWNRecord) GetDomain() string {
+	return a.Domain
 }
 
 // DnsPacket represents a DNS packet.
@@ -734,6 +743,11 @@ func NewDnsPacket() *DnsPacket {
 	}
 }
 
+// // FindRecordType returns correctly parsed DnsRecord
+// func FindRecordType(rec *UNKNOWNRecord) (*DnsRecord, error) {
+
+// }
+
 // FromBuffer creates a new DNS packet from the buffer.
 func FromBuffer(buffer *bytepacketbuffer.BytePacketBuffer) (*DnsPacket, error) {
 	packet := NewDnsPacket()
@@ -748,24 +762,27 @@ func FromBuffer(buffer *bytepacketbuffer.BytePacketBuffer) (*DnsPacket, error) {
 
 	// Reading answers from the buffer
 	for i := uint16(0); i < packet.Header.Answers; i++ {
-		var rec DnsRecord
+		rec := &UNKNOWNRecord{}
+		// var rec DnsRecord
 		if err := rec.Read(buffer); err != nil {
 			return nil, err
 		}
+
+		// newRecType := FindRecordType(rec)
 		packet.Answers = append(packet.Answers, rec)
 	}
 	// Reading authoritative entries from the buffer
 	for i := uint16(0); i < packet.Header.AuthoritativeEntries; i++ {
 		fmt.Println("authoritative enteries", len(packet.Authorities), "len in header: ", packet.Header.AuthoritativeEntries)
-		var rec DnsRecord
+		rec := &UNKNOWNRecord{}
 		if err := rec.Read(buffer); err != nil {
 			return nil, err
 		}
 		packet.Authorities = append(packet.Authorities, rec)
 	}
-	// Reading answers from the buffer
+	// Reading Resources from the buffer
 	for i := uint16(0); i < uint16(len(packet.Resources)); i++ {
-		var rec DnsRecord
+		rec := &UNKNOWNRecord{}
 		if err := rec.Read(buffer); err != nil {
 			return nil, err
 		}
