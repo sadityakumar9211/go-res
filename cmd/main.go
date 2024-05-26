@@ -1,13 +1,18 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
 	"os"
+	"time"
 
 	dns "github.com/sadityakumar9211/go-res/internal/dns"
 	buf "github.com/sadityakumar9211/go-res/pkg/bytepacketbuffer"
 )
+
+// For now we're always starting with *a.root-servers.net*.
+const rootNameServer = "198.41.0.4"
 
 func lookup(qname string, qtype dns.QueryType, server string) (*dns.DnsPacket, error) {
 	// Forward queries to the specified DNS server
@@ -17,6 +22,9 @@ func lookup(qname string, qtype dns.QueryType, server string) (*dns.DnsPacket, e
 		return nil, err
 	}
 	defer socket.Close()
+
+	// 5 second deadline for read and write operation to this socket.
+	socket.SetDeadline(time.Now().Add(5 * time.Second))
 
 	packet := dns.NewDnsPacket()
 	packet.Header.ID = 6666
@@ -46,49 +54,58 @@ func lookup(qname string, qtype dns.QueryType, server string) (*dns.DnsPacket, e
 	if err != nil {
 		return nil, err
 	}
-
-	fmt.Printf("%#v\n", resPacket)
+	jsonData, err := json.MarshalIndent(resPacket, "  ", "   ")
+	if err != nil {
+		fmt.Println("Error marshling to JSON: ", err)
+		return resPacket, nil
+	}
+	fmt.Println(string(jsonData))
 	return resPacket, nil
 }
 
 func recursiveLookup(qname string, qtype dns.QueryType) (*dns.DnsPacket, error) {
-	 // For now we're always starting with *a.root-servers.net*.
-	ns := net.ParseIP("198.41.0.4")
+	ns := net.ParseIP(rootNameServer)
 
 	// Since it might take an arbitrary number of steps, we enter an unbounded loop.
 	for {
-		fmt.Printf("Attempting lookup of %v %v with NS %v\n", qtype, qname, ns)
+		fmt.Printf("\nAttempting lookup of %v %v with NS %v\n", qtype, qname, ns)
 
-		server := fmt.Sprintf("%s:53", ns.String())
-		response, err := lookup(qname, qtype, server)
+		addr := fmt.Sprintf("%s:53", ns.String())
+		response, err := lookup(qname, qtype, addr)
 		if err != nil {
 			return nil, err
 		}
 
 		if len(response.Answers) > 0 && response.Header.ResultCode == dns.NOERROR {
 			return response, nil
-		}
-
-		if response.Header.ResultCode == dns.NXDOMAIN {
+		} else if response.Header.ResultCode == dns.NXDOMAIN {
 			return response, nil
 		}
 
+		// Otherwise, we'll try to find a new nameserver based on NS and a corresponding A
+		// record in the additional section. If this succeeds, we can switch name server
+		// and retry the loop.
 		newNS := response.GetResolvedNS(qname)
 		if newNS != nil {
 			ns = newNS
 			continue
 		}
 
-		newNSName := response.GetUnresolvedNS(qname)
-		if newNSName != "" {
-			recursiveResponse, err := recursiveLookup(newNSName, dns.A)
-			if err != nil {
-				return nil, err
-			}
-
-			newNS = recursiveResponse.GetRandomA()
-			if newNS != nil {
-				ns = newNS
+		// If not, we'll have to resolve the ip of a NS record. If no NS records exist,
+		// we'll go with what the last server told us.
+		for candidateNS := range response.GetNS(qname) {
+			if candidateNS.Host != "" {
+				recursiveResponse, err := recursiveLookup(candidateNS.Host, dns.A)
+				if err != nil {
+					continue
+				}
+				newNS := recursiveResponse.GetRandomA()
+				if newNS != nil {
+					ns = newNS
+					break
+				} else {
+					return response, nil
+				}
 			} else {
 				return response, nil
 			}
@@ -106,7 +123,7 @@ func handleQuery(socket *net.UDPConn) error {
 	// We're not interested in the length, but we need to keep track of the
 	// source in order to send our reply later on.
 
-	// Taking input from `dig`
+	// Taking input from `dig`.
 	_, src, err := socket.ReadFromUDP(reqBuffer.Buf[:])
 	if err != nil {
 		return err
@@ -116,8 +133,6 @@ func handleQuery(socket *net.UDPConn) error {
 	if err != nil {
 		return err
 	}
-
-	fmt.Printf("%#v\n", request)
 
 	// Create and initialize the response packet
 	response := dns.NewDnsPacket()
@@ -159,6 +174,7 @@ func handleQuery(socket *net.UDPConn) error {
 		// need make sure that a question is actually present. If not, we return `FORMERR`
 		// to indicate that the sender made something wrong.
 		response.Header.ResultCode = dns.FORMERR
+		fmt.Println("More than one question present...")
 	}
 
 	// The only thing remaining is to encode our response and send it off!
@@ -175,7 +191,7 @@ func handleQuery(socket *net.UDPConn) error {
 	return nil
 }
 
-func main() {
+func main() { // endpoint for sending and receiving packets
 	// Bind a UDP socket on port 2053 to listen for DNS queries
 	// Listening to all available network interfaces at port 2053.
 	addr, err := net.ResolveUDPAddr("udp", "0.0.0.0:2053")
@@ -184,7 +200,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// endpoint for sending and receiving packets
 	socket, err := net.ListenUDP("udp", addr)
 	if err != nil {
 		fmt.Println("Error binding UDP socket:", err)

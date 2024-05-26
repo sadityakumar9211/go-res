@@ -1,6 +1,7 @@
 package dns
 
 import (
+	"fmt"
 	"net"
 	"strings"
 
@@ -712,8 +713,8 @@ func (u *UNKNOWNRecord) Read(buffer *bytepacketbuffer.BytePacketBuffer) error {
 
 // Write writes UNKNOWNRecord data to the buffer.
 func (u *UNKNOWNRecord) Write(buffer *bytepacketbuffer.BytePacketBuffer) (uint, error) {
-	// st := fmt.Sprintf("Skipping record %v", u)
-	// fmt.Println(st)
+	st := fmt.Sprintf("Skipping record %v", u)
+	fmt.Println(st)
 	return 0, nil
 }
 
@@ -727,11 +728,11 @@ func (a *UNKNOWNRecord) GetDomain() string {
 
 // DnsPacket represents a DNS packet.
 type DnsPacket struct {
-	Header      *DnsHeader
-	Questions   []*DnsQuestion
-	Answers     []DnsRecord
-	Authorities []DnsRecord
-	Resources   []DnsRecord
+	Header      *DnsHeader    `json:"header"`
+	Questions   []*DnsQuestion `json:"questions"`
+	Answers     []DnsRecord   `json:"answers"`
+	Authorities []DnsRecord   `json:"authorities"`
+	Resources   []DnsRecord   `json:"resources"`
 }
 
 // NewDnsPacket creates a new DNS packet with default values.
@@ -906,7 +907,7 @@ func FromBuffer(buffer *bytepacketbuffer.BytePacketBuffer) (*DnsPacket, error) {
 		packet.Authorities = append(packet.Authorities, rec)
 	}
 	// Reading Resources from the buffer
-	for i := uint16(0); i < uint16(len(packet.Resources)); i++ {
+	for i := uint16(0); i < packet.Header.ResourceEntries; i++ {
 		rec, err := ReadDNSRecord(buffer)
 		if err != nil {
 			return nil, err
@@ -953,18 +954,23 @@ func (p *DnsPacket) Write(buffer *bytepacketbuffer.BytePacketBuffer) error {
 	return nil
 }
 
-// / It's useful to be able to pick a random A record from a packet. When we
-// / get multiple IP's for a single name, it doesn't matter which one we
-// / choose, so in those cases we can now pick one at random.
+// It's useful to be able to pick a random A record from a packet. When we
+// get multiple IP's for a single name, it doesn't matter which one we
+// choose, so in those cases we can now pick one at random.
 // GetRandomA returns a random IPv4 address (A record) from the DNS packet's list of answers.
 func (p *DnsPacket) GetRandomA() net.IP {
 	for _, record := range p.Answers {
 		// if a, ok := record.(DnsRecord); ok {
 		// Only A records return the address and others return nil
-		if addr := record.ExtractIPv4(); addr != nil {
-			return addr
+		switch record.(type) {
+		case *ARecord:
+			addr := record.ExtractIPv4()
+			if addr != nil {
+				return addr
+			}
+		default:
+			continue
 		}
-		// }
 	}
 	return nil // Return nil if no IPv4 address is found
 }
@@ -1003,18 +1009,19 @@ func (p *DnsPacket) GetNS(qname string) <-chan struct {
 }
 
 // GetResolvedNS returns the resolved IP for an NS record if possible.
-// / We'll use the fact that name servers often bundle the corresponding
-// / A records when replying to an NS query to implement a function that
-// / returns the actual IP for an NS record if possible.
+// We'll use the fact that name servers often bundle the corresponding
+// A records when replying to an NS query to implement a function that
+// returns the actual IP for an NS record if possible.
 func (p *DnsPacket) GetResolvedNS(qname string) net.IP {
 	for ns := range p.GetNS(qname) {
+		// Looking if there are any additional records sent so that we don't have to perform second lookup.
 		for _, record := range p.Resources {
 			if aRecord, ok := record.(*ARecord); ok && aRecord.Domain == ns.Host {
 				return aRecord.Addr
 			}
 		}
 	}
-
+	// no additional A records sent. 
 	return nil // Return nil for no match
 }
 
@@ -1025,6 +1032,7 @@ func (p *DnsPacket) GetResolvedNS(qname string) net.IP {
 // GetUnresolvedNS returns the host name of an appropriate name server.
 func (p *DnsPacket) GetUnresolvedNS(qname string) string {
 	for ns := range p.GetNS(qname) {
+		fmt.Printf("ns from unresolved NS: %+v", ns)
 		return ns.Host
 	}
 

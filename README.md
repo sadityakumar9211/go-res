@@ -31,281 +31,280 @@ You will see responses on both the terminals similar to this:
   <summary>Toggle to see output of `server` terminal</summary>
 
 ```text
-Received query: DnsQuestion { name: "www.reddit.com", qtype: A }
-attempting lookup of A www.reddit.com with ns 198.41.0.4
-Ok(
-    DnsPacket {
-        header: DnsHeader {
-            id: 6666,
-            recursion_desired: true,
-            truncated_message: true,
-            authoritative_answer: false,
-            opcode: 0,
-            response: true,
-            rescode: NOERROR,
-            checking_disabled: false,
-            authed_data: false,
-            z: false,
-            recursion_available: false,
-            questions: 1,
-            answers: 0,
-            authoritative_entries: 13,
-            resource_entries: 11,
+DNS server is listening on port 2053...
+Received query: &dns.DnsQuestion{Name:"www.reddit.com", QType:1}
+
+Attempting lookup of 1 www.reddit.com with NS 198.41.0.4
+{
+     "header": {
+        "ID": 6666,
+        "RecursionDesired": true,
+        "TruncatedMessage": true,
+        "AuthoritativeAnswer": false,
+        "Opcode": 0,
+        "Response": true,
+        "ResultCode": 0,
+        "CheckingDisabled": false,
+        "AuthedData": false,
+        "Z": false,
+        "RecursionAvailable": false,
+        "Questions": 1,
+        "Answers": 0,
+        "AuthoritativeEntries": 13,
+        "ResourceEntries": 11
+     },
+     "questions": [
+        {
+           "Name": "www.reddit.com",
+           "QType": 1
+        }
+     ],
+     "answers": [],
+     "authorities": [
+        {
+           "Domain": "com",
+           "Host": "l.gtld-servers.net",
+           "TTL": 172800
         },
-        questions: [
-            DnsQuestion {
-                name: "www.reddit.com",
-                qtype: A,
-            },
-        ],
-        answers: [],
-        authorities: [
-            NS {
-                domain: "com",
-                host: "e.gtld-servers.net",
-                ttl: 172800,
-            },
-            NS {
-                domain: "com",
-                host: "b.gtld-servers.net",
-                ttl: 172800,
-            },
-            NS {
-                domain: "com",
-                host: "j.gtld-servers.net",
-                ttl: 172800,
-            },
-            NS {
-                domain: "com",
-                host: "m.gtld-servers.net",
-                ttl: 172800,
-            },
-            NS {
-                domain: "com",
-                host: "i.gtld-servers.net",
-                ttl: 172800,
-            },
-            NS {
-                domain: "com",
-                host: "f.gtld-servers.net",
-                ttl: 172800,
-            },
-            NS {
-                domain: "com",
-                host: "a.gtld-servers.net",
-                ttl: 172800,
-            },
-            NS {
-                domain: "com",
-                host: "g.gtld-servers.net",
-                ttl: 172800,
-            },
-            NS {
-                domain: "com",
-                host: "h.gtld-servers.net",
-                ttl: 172800,
-            },
-            NS {
-                domain: "com",
-                host: "l.gtld-servers.net",
-                ttl: 172800,
-            },
-            NS {
-                domain: "com",
-                host: "k.gtld-servers.net",
-                ttl: 172800,
-            },
-            NS {
-                domain: "com",
-                host: "c.gtld-servers.net",
-                ttl: 172800,
-            },
-            NS {
-                domain: "com",
-                host: "d.gtld-servers.net",
-                ttl: 172800,
-            },
-        ],
-        resources: [
-            A {
-                domain: "e.gtld-servers.net",
-                addr: 192.12.94.30,
-                ttl: 172800,
-            },
-            AAAA {
-                domain: "e.gtld-servers.net",
-                addr: 2001:502:1ca1::30,
-                ttl: 172800,
-            },
-            A {
-                domain: "b.gtld-servers.net",
-                addr: 192.33.14.30,
-                ttl: 172800,
-            },
-            AAAA {
-                domain: "b.gtld-servers.net",
-                addr: 2001:503:231d::2:30,
-                ttl: 172800,
-            },
-            A {
-                domain: "j.gtld-servers.net",
-                addr: 192.48.79.30,
-                ttl: 172800,
-            },
-            AAAA {
-                domain: "j.gtld-servers.net",
-                addr: 2001:502:7094::30,
-                ttl: 172800,
-            },
-            A {
-                domain: "m.gtld-servers.net",
-                addr: 192.55.83.30,
-                ttl: 172800,
-            },
-            AAAA {
-                domain: "m.gtld-servers.net",
-                addr: 2001:501:b1f9::30,
-                ttl: 172800,
-            },
-            A {
-                domain: "i.gtld-servers.net",
-                addr: 192.43.172.30,
-                ttl: 172800,
-            },
-            AAAA {
-                domain: "i.gtld-servers.net",
-                addr: 2001:503:39c1::30,
-                ttl: 172800,
-            },
-            A {
-                domain: "f.gtld-servers.net",
-                addr: 192.35.51.30,
-                ttl: 172800,
-            },
-        ],
-    },
-)
-attempting lookup of A www.reddit.com with ns 192.12.94.30
-Ok(
-    DnsPacket {
-        header: DnsHeader {
-            id: 6666,
-            recursion_desired: true,
-            truncated_message: false,
-            authoritative_answer: false,
-            opcode: 0,
-            response: true,
-            rescode: NOERROR,
-            checking_disabled: false,
-            authed_data: false,
-            z: false,
-            recursion_available: false,
-            questions: 1,
-            answers: 0,
-            authoritative_entries: 4,
-            resource_entries: 1,
+        {
+           "Domain": "com",
+           "Host": "j.gtld-servers.net",
+           "TTL": 172800
         },
-        questions: [
-            DnsQuestion {
-                name: "www.reddit.com",
-                qtype: A,
-            },
-        ],
-        answers: [],
-        authorities: [
-            NS {
-                domain: "reddit.com",
-                host: "ns-557.awsdns-05.net",
-                ttl: 172800,
-            },
-            NS {
-                domain: "reddit.com",
-                host: "ns-378.awsdns-47.com",
-                ttl: 172800,
-            },
-            NS {
-                domain: "reddit.com",
-                host: "ns-1029.awsdns-00.org",
-                ttl: 172800,
-            },
-            NS {
-                domain: "reddit.com",
-                host: "ns-1887.awsdns-43.co.uk",
-                ttl: 172800,
-            },
-        ],
-        resources: [
-            A {
-                domain: "ns-378.awsdns-47.com",
-                addr: 205.251.193.122,
-                ttl: 172800,
-            },
-        ],
-    },
-)
-attempting lookup of A www.reddit.com with ns 205.251.193.122
-Ok(
-    DnsPacket {
-        header: DnsHeader {
-            id: 6666,
-            recursion_desired: true,
-            truncated_message: false,
-            authoritative_answer: true,
-            opcode: 0,
-            response: true,
-            rescode: NOERROR,
-            checking_disabled: false,
-            authed_data: false,
-            z: false,
-            recursion_available: false,
-            questions: 1,
-            answers: 1,
-            authoritative_entries: 4,
-            resource_entries: 0,
+        {
+           "Domain": "com",
+           "Host": "h.gtld-servers.net",
+           "TTL": 172800
         },
-        questions: [
-            DnsQuestion {
-                name: "www.reddit.com",
-                qtype: A,
-            },
-        ],
-        answers: [
-            CNAME {
-                domain: "www.reddit.com",
-                host: "reddit.map.fastly.net",
-                ttl: 10800,
-            },
-        ],
-        authorities: [
-            NS {
-                domain: "reddit.com",
-                host: "ns-1029.awsdns-00.org",
-                ttl: 172800,
-            },
-            NS {
-                domain: "reddit.com",
-                host: "ns-1887.awsdns-43.co.uk",
-                ttl: 172800,
-            },
-            NS {
-                domain: "reddit.com",
-                host: "ns-378.awsdns-47.com",
-                ttl: 172800,
-            },
-            NS {
-                domain: "reddit.com",
-                host: "ns-557.awsdns-05.net",
-                ttl: 172800,
-            },
-        ],
-        resources: [],
-    },
-)
-Answer: CNAME { domain: "www.reddit.com", host: "reddit.map.fastly.net", ttl: 10800 }
-Authority: NS { domain: "reddit.com", host: "ns-1029.awsdns-00.org", ttl: 172800 }
-Authority: NS { domain: "reddit.com", host: "ns-1887.awsdns-43.co.uk", ttl: 172800 }
-Authority: NS { domain: "reddit.com", host: "ns-378.awsdns-47.com", ttl: 172800 }
-Authority: NS { domain: "reddit.com", host: "ns-557.awsdns-05.net", ttl: 172800 }
+        {
+           "Domain": "com",
+           "Host": "d.gtld-servers.net",
+           "TTL": 172800
+        },
+        {
+           "Domain": "com",
+           "Host": "b.gtld-servers.net",
+           "TTL": 172800
+        },
+        {
+           "Domain": "com",
+           "Host": "f.gtld-servers.net",
+           "TTL": 172800
+        },
+        {
+           "Domain": "com",
+           "Host": "k.gtld-servers.net",
+           "TTL": 172800
+        },
+        {
+           "Domain": "com",
+           "Host": "m.gtld-servers.net",
+           "TTL": 172800
+        },
+        {
+           "Domain": "com",
+           "Host": "i.gtld-servers.net",
+           "TTL": 172800
+        },
+        {
+           "Domain": "com",
+           "Host": "g.gtld-servers.net",
+           "TTL": 172800
+        },
+        {
+           "Domain": "com",
+           "Host": "a.gtld-servers.net",
+           "TTL": 172800
+        },
+        {
+           "Domain": "com",
+           "Host": "c.gtld-servers.net",
+           "TTL": 172800
+        },
+        {
+           "Domain": "com",
+           "Host": "e.gtld-servers.net",
+           "TTL": 172800
+        }
+     ],
+     "resources": [
+        {
+           "Domain": "l.gtld-servers.net",
+           "Addr": "192.41.162.30",
+           "TTL": 172800
+        },
+        {
+           "Domain": "l.gtld-servers.net",
+           "Addr": "2001:500:d937::30",
+           "TTL": 172800
+        },
+        {
+           "Domain": "j.gtld-servers.net",
+           "Addr": "192.48.79.30",
+           "TTL": 172800
+        },
+        {
+           "Domain": "j.gtld-servers.net",
+           "Addr": "2001:502:7094::30",
+           "TTL": 172800
+        },
+        {
+           "Domain": "h.gtld-servers.net",
+           "Addr": "192.54.112.30",
+           "TTL": 172800
+        },
+        {
+           "Domain": "h.gtld-servers.net",
+           "Addr": "2001:502:8cc::30",
+           "TTL": 172800
+        },
+        {
+           "Domain": "d.gtld-servers.net",
+           "Addr": "192.31.80.30",
+           "TTL": 172800
+        },
+        {
+           "Domain": "d.gtld-servers.net",
+           "Addr": "2001:500:856e::30",
+           "TTL": 172800
+        },
+        {
+           "Domain": "b.gtld-servers.net",
+           "Addr": "192.33.14.30",
+           "TTL": 172800
+        },
+        {
+           "Domain": "b.gtld-servers.net",
+           "Addr": "2001:503:231d::2:30",
+           "TTL": 172800
+        },
+        {
+           "Domain": "f.gtld-servers.net",
+           "Addr": "192.35.51.30",
+           "TTL": 172800
+        }
+     ]
+  }
+
+Attempting lookup of 1 www.reddit.com with NS 192.41.162.30
+{
+     "header": {
+        "ID": 6666,
+        "RecursionDesired": true,
+        "TruncatedMessage": false,
+        "AuthoritativeAnswer": false,
+        "Opcode": 0,
+        "Response": true,
+        "ResultCode": 0,
+        "CheckingDisabled": false,
+        "AuthedData": false,
+        "Z": false,
+        "RecursionAvailable": false,
+        "Questions": 1,
+        "Answers": 0,
+        "AuthoritativeEntries": 4,
+        "ResourceEntries": 1
+     },
+     "questions": [
+        {
+           "Name": "www.reddit.com",
+           "QType": 1
+        }
+     ],
+     "answers": [],
+     "authorities": [
+        {
+           "Domain": "reddit.com",
+           "Host": "ns-557.awsdns-05.net",
+           "TTL": 172800
+        },
+        {
+           "Domain": "reddit.com",
+           "Host": "ns-378.awsdns-47.com",
+           "TTL": 172800
+        },
+        {
+           "Domain": "reddit.com",
+           "Host": "ns-1029.awsdns-00.org",
+           "TTL": 172800
+        },
+        {
+           "Domain": "reddit.com",
+           "Host": "ns-1887.awsdns-43.co.uk",
+           "TTL": 172800
+        }
+     ],
+     "resources": [
+        {
+           "Domain": "ns-378.awsdns-47.com",
+           "Addr": "205.251.193.122",
+           "TTL": 172800
+        }
+     ]
+  }
+
+Attempting lookup of 1 www.reddit.com with NS 205.251.193.122
+{
+     "header": {
+        "ID": 6666,
+        "RecursionDesired": true,
+        "TruncatedMessage": false,
+        "AuthoritativeAnswer": true,
+        "Opcode": 0,
+        "Response": true,
+        "ResultCode": 0,
+        "CheckingDisabled": false,
+        "AuthedData": false,
+        "Z": false,
+        "RecursionAvailable": false,
+        "Questions": 1,
+        "Answers": 1,
+        "AuthoritativeEntries": 4,
+        "ResourceEntries": 0
+     },
+     "questions": [
+        {
+           "Name": "www.reddit.com",
+           "QType": 1
+        }
+     ],
+     "answers": [
+        {
+           "Domain": "www.reddit.com",
+           "Host": "reddit.map.fastly.net",
+           "TTL": 10800
+        }
+     ],
+     "authorities": [
+        {
+           "Domain": "reddit.com",
+           "Host": "ns-1029.awsdns-00.org",
+           "TTL": 172800
+        },
+        {
+           "Domain": "reddit.com",
+           "Host": "ns-1887.awsdns-43.co.uk",
+           "TTL": 172800
+        },
+        {
+           "Domain": "reddit.com",
+           "Host": "ns-378.awsdns-47.com",
+           "TTL": 172800
+        },
+        {
+           "Domain": "reddit.com",
+           "Host": "ns-557.awsdns-05.net",
+           "TTL": 172800
+        }
+     ],
+     "resources": []
+  }
+Answer: &dns.NSRecord{Domain:"www.reddit.com", Host:"reddit.map.fastly.net", TTL:0x2a30}
+Authority: &dns.NSRecord{Domain:"reddit.com", Host:"ns-1029.awsdns-00.org", TTL:0x2a300}
+Authority: &dns.NSRecord{Domain:"reddit.com", Host:"ns-1887.awsdns-43.co.uk", TTL:0x2a300}
+Authority: &dns.NSRecord{Domain:"reddit.com", Host:"ns-378.awsdns-47.com", TTL:0x2a300}
+Authority: &dns.NSRecord{Domain:"reddit.com", Host:"ns-557.awsdns-05.net", TTL:0x2a300}
+
 ```
 </details>
 <br>
@@ -314,18 +313,19 @@ Authority: NS { domain: "reddit.com", host: "ns-557.awsdns-05.net", ttl: 172800 
   <summary>Toggle to see output of `dig` terminal</summary>
 
 ```text
+
 ; <<>> DiG 9.10.6 <<>> @127.0.0.1 -p 2053 www.reddit.com
 ; (1 server found)
 ;; global options: +cmd
 ;; Got answer:
-;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 35824
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 11817
 ;; flags: qr rd ra; QUERY: 1, ANSWER: 1, AUTHORITY: 4, ADDITIONAL: 0
 
 ;; QUESTION SECTION:
 ;www.reddit.com.                        IN      A
 
 ;; ANSWER SECTION:
-www.reddit.com.         10800   IN      CNAME   reddit.map.fastly.net.
+www.reddit.com.         10800   IN      NS      reddit.map.fastly.net.
 
 ;; AUTHORITY SECTION:
 reddit.com.             172800  IN      NS      ns-1029.awsdns-00.org.
@@ -333,9 +333,9 @@ reddit.com.             172800  IN      NS      ns-1887.awsdns-43.co.uk.
 reddit.com.             172800  IN      NS      ns-378.awsdns-47.com.
 reddit.com.             172800  IN      NS      ns-557.awsdns-05.net.
 
-;; Query time: 436 msec
+;; Query time: 363 msec
 ;; SERVER: 127.0.0.1#2053(127.0.0.1)
-;; WHEN: Mon Aug 28 08:37:37 IST 2023
+;; WHEN: Mon May 27 02:27:37 IST 2024
 ;; MSG SIZE  rcvd: 261
 ```
 </details>
