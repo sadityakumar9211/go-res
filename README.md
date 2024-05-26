@@ -3,7 +3,7 @@
 A recursive resolver which queries public DNS infrastructure recursively (from root-nameserver to the authoratative-nameserver for that particular domain) and responds with DNS response packet.
 
 ## Getting Started
-The easiest way to get started is through downloading and running the binaries on your platform from latest release. However, if you don't find any for your platform or want to DIY, you can follow below process: 
+The easiest way to get started is through downloading and running the binaries on your platform from latest [release](https://github.com/sadityakumar9211/go-res/tags). However, if you don't find any for your platform or want to DIY, you can follow below process: 
 
 1. Clone this repository
 ```zsh
