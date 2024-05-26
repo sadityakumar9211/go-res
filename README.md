@@ -340,7 +340,7 @@ reddit.com.             172800  IN      NS      ns-557.awsdns-05.net.
 ```
 </details>
 
-When you run `go run cmd/main.go`, it spins up a server which is listening for UDP packets on port 2053 on 127.0.0.1 (localhost). When you query for `www.reddit.com` using `dig`, server catches the packet which dig transmitted and retransmits it to the one of the 13 logical root nameserver. It gets the response for the TLD nameservers handling the `.com` domain. It again queries one of the TLD nameservers and in response gets the IP addresses of authoritative nameservers which are handling the `reddit.com` zone. It further queries one of these nameservers and finally gets a response with `answers` section filled with the IP address of `www.reddit.com` domain. Finally, it returns this result to `dig` by encoding this result in a DNS packet. `dig` parses this packet and shows the result in the console.
+When you run `go run cmd/main.go`, it spins up a server which is listening for UDP packets on port 2053 on 127.0.0.1 (localhost). When you query for `www.reddit.com` using `dig`, server catches the packet which dig transmitted and retransmits it to one of the 13 logical root nameserver. It gets the response for the TLD nameservers handling the `.com` domain. It again queries one of the TLD nameservers and in response gets the IP addresses of authoritative nameservers which are handling the `reddit.com` zone. It further queries one of these nameservers and finally gets a response with `answers` section filled with the IP address of `www.reddit.com` domain. Finally, it returns this result to `dig` by encoding this result in a DNS packet. `dig` parses this packet and shows the result in the console.
 
 
 <!--## Developer Notes
