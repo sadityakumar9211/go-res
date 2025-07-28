@@ -469,7 +469,7 @@ func (a *AAAARecord) Write(buffer *bytepacketbuffer.BytePacketBuffer) (uint, err
 	if err := buffer.WriteQName(a.Domain); err != nil {
 		return 0, err
 	}
-	if err := buffer.WriteU16(AAAA.QueryTypeToNum()); err != nil {
+	if err := buffer.WriteU16(NS.QueryTypeToNum()); err != nil {
 		return 0, err
 	}
 	if err := buffer.WriteU16(1); err != nil {
@@ -728,11 +728,11 @@ func (a *UNKNOWNRecord) GetDomain() string {
 
 // DnsPacket represents a DNS packet.
 type DnsPacket struct {
-	Header      *DnsHeader     `json:"header"`
+	Header      *DnsHeader    `json:"header"`
 	Questions   []*DnsQuestion `json:"questions"`
-	Answers     []DnsRecord    `json:"answers"`
-	Authorities []DnsRecord    `json:"authorities"`
-	Resources   []DnsRecord    `json:"resources"`
+	Answers     []DnsRecord   `json:"answers"`
+	Authorities []DnsRecord   `json:"authorities"`
+	Resources   []DnsRecord   `json:"resources"`
 }
 
 // NewDnsPacket creates a new DNS packet with default values.
@@ -846,7 +846,7 @@ func ReadDNSRecord(buffer *bytepacketbuffer.BytePacketBuffer) (DnsRecord, error)
 		var cname string
 		buffer.ReadQName(&cname)
 
-		return &CNAMERecord{
+		return &NSRecord{
 			Domain: domain,
 			Host:   cname,
 			TTL:    ttl,
@@ -1021,7 +1021,7 @@ func (p *DnsPacket) GetResolvedNS(qname string) net.IP {
 			}
 		}
 	}
-	// no additional A records sent.
+	// no additional A records sent. 
 	return nil // Return nil for no match
 }
 

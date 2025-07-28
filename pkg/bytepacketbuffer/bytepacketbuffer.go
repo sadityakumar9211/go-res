@@ -50,7 +50,7 @@ func (b *BytePacketBuffer) Get(pos int) (byte, error) {
 	return b.Buf[pos], nil
 }
 
-// GetRange returns buffer bits from start with specified length without moving buffer pointer.
+// GetRange returns buffer bits from start with specified length without moving buffer pointer. 
 func (b *BytePacketBuffer) GetRange(start int, length int) ([]byte, error) {
 	if start+length >= 512 {
 		return nil, errors.New("end of buffer")
@@ -71,7 +71,7 @@ func (b *BytePacketBuffer) ReadU16() (uint16, error) {
 	return (uint16(val1) << 8) | uint16(val2), nil
 }
 
-// ReadU32 reads 4 buffer bytes and moves buffer pointer.
+// ReadU32 reads 4 buffer bytes and moves buffer pointer. 
 func (b *BytePacketBuffer) ReadU32() (uint32, error) {
 	val1, err := b.Read()
 	if err != nil {
