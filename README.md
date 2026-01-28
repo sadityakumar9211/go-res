@@ -27,7 +27,14 @@ dig @127.0.0.1 -p 2053 <domain_name>
 ```
 
 6. Response  
-You will see responses on both the terminals similar to this: 
+You will see responses on both the terminals similar to this:
+
+<details>
+  <summary>Comparision of dig with ISP and my resolver</summary>
+  
+  ![Screenshot 2026-01-28 at 11 15 32 AM](https://github.com/user-attachments/assets/52b7e1a1-f8a5-4fcc-8f86-f2d4263a571d)
+
+</details>
 
 <details>
   <summary>Toggle to see output of `server` terminal</summary>
